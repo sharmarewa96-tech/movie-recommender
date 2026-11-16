@@ -65,15 +65,33 @@ def goto_details(tmdb_id: int):
 # =============================
 # API HELPERS
 # =============================
+
 @st.cache_data(ttl=30)  # short cache for autocomplete
 def api_get_json(path: str, params: dict | None = None):
     try:
-        r = requests.get(f"{API_BASE}{path}", params=params, timeout=25)
+        r = requests.get(
+            f"{API_BASE}{path}",
+            params=params,
+            timeout=(10, 90)
+        )
+
         if r.status_code >= 400:
             return None, f"HTTP {r.status_code}: {r.text[:300]}"
+
         return r.json(), None
-    except Exception as e:
-        return None, f"Request failed: {e}"
+
+    except requests.exceptions.Timeout:
+        return None, (
+            "The recommendation server is taking longer than expected. "
+            "Please wait a little and try again."
+        )
+
+    except requests.exceptions.RequestException as e:
+        return None, f"Backend connection error: {e}"
+
+    except ValueError:
+        return None, "Invalid response received from backend."
+
 
 
 def poster_grid(cards, cols=6, key_prefix="grid"):
